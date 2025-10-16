@@ -10,7 +10,7 @@ export default function ContactScreen() {
   const openWhatsApp = async () => {
     const url = `https://wa.me/${whatsappNumber}`;
     const supported = await Linking.canOpenURL(url);
-    supported ? Linking.openURL(url) : Alert.alert("Erro", "Não foi possível abrir o WhatsApp.");
+    supported ? Linking.openURL(url) : Alert.alert("Erro", "Não foi possível birr o WhatsApp.");
   };
 
   const makeCall = async () => {
