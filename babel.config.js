@@ -1,8 +1,7 @@
-module.exports = function (api) {
+module.exports = function(api) {
   api.cache(true);
   return {
     presets: ["babel-preset-expo"],
-    plugins: ["react-native-reanimated/plugin"], // ⚠️ sempre por último
+    plugins: ["react-native-reanimated/plugin"], // tem que ser o último
   };
 };
-

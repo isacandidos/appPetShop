@@ -1,51 +1,30 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useColorScheme } from "react-native";
 
 export default function TabsLayout() {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   return (
     <Tabs
-      screenOptions={({ route }) => ({
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: "#54BFC5",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          fontWeight: "bold",
-        },
-        tabBarActiveTintColor: "#54BFC5",
-        tabBarInactiveTintColor: "#95a5a6",
+      screenOptions={{
+        headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#ffffff",
-          borderTopColor: "#dcdde1",
-          height: 65,
-          paddingBottom: 8,
-          paddingTop: 5,
+          backgroundColor: isDark ? "#111" : "#fff",
+          borderTopColor: isDark ? "#333" : "#eee",
         },
-        tabBarIcon: ({ color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap = "home";
-
-          if (route.name === "index") {
-            iconName = "home-outline";
-          } else if (route.name === "services") {
-            iconName = "paw-outline";
-          } else if (route.name === "agendamentos") {
-            iconName = "calendar-outline";
-          } else if (route.name === "appointments") {
-            iconName = "list-outline";
-          } else if (route.name === "contact") {
-            iconName = "call-outline";
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-      })}
+        tabBarActiveTintColor: isDark ? "#54BFC5" : "#54BFC5",
+        tabBarInactiveTintColor: isDark ? "#aaa" : "#555",
+      }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Início",
-          tabBarLabel: "Início",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
         }}
       />
 
@@ -53,23 +32,9 @@ export default function TabsLayout() {
         name="services"
         options={{
           title: "Serviços",
-          tabBarLabel: "Serviços",
-        }}
-      />
-
-      <Tabs.Screen
-        name="agendamentos"
-        options={{
-          title: "Agendar",
-          tabBarLabel: "Agendar",
-        }}
-      />
-
-      <Tabs.Screen
-        name="appointment"
-        options={{
-          title: "Meus Agendamentos",
-          tabBarLabel: "Meus Agendamentos", // 👈 nome exibido na barra
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="paw" size={size} color={color} />
+          ),
         }}
       />
 
@@ -77,11 +42,31 @@ export default function TabsLayout() {
         name="contact"
         options={{
           title: "Contato",
-          tabBarLabel: "Contato",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="call" size={size} color={color} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="appointment"
+        options={{
+          title: "Meus Agendamentos",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="agendamentos"
+        options={{
+          title: "Novo Agendamento",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="add-circle" size={size} color={color} />
+          ),
         }}
       />
     </Tabs>
   );
 }
-
-

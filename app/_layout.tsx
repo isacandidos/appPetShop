@@ -1,30 +1,29 @@
-import "react-native-reanimated";
-import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AppointmentsProvider } from "../context/AppointmentsContext";
-
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
+import { useColorScheme } from "react-native";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
     <AppointmentsProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
-          />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: {
+            backgroundColor: colorScheme === "dark" ? "#111" : "#fff",
+          },
+        }}
+      >
+        {/** Tela de cadastro abre primeiro antes das abas */}
+        <Stack.Screen name="cadastro" />
+
+        {/** Grupo principal do app */}
+        <Stack.Screen name="(tabs)" />
+
+        {/** Tela modal (depois se quiser usar) */}
+        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+      </Stack>
     </AppointmentsProvider>
   );
 }
-import { Ionicons } from "@expo/vector-icons";

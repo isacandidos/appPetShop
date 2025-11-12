@@ -1,33 +1,123 @@
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from "react-native";
-import { useAppointments } from "../../context/AppointmentsContext";
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  useColorScheme,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "expo-router";
 
-export default function AppointmentsScreen() {
-  const { appointments, removeAppointment } = useAppointments();
+const STORAGE_KEY = "@dogvip_appointments";
+
+export default function AppointmentScreen() {
+  const [appointments, setAppointments] = useState([]);
+  const theme = useColorScheme();
+  const isDark = theme === "dark";
+
+  // 🔁 Carrega sempre que a tela ganha foco (para atualizar instantâneo)
+  useFocusEffect(
+    useCallback(() => {
+      const loadAppointments = async () => {
+        try {
+          const stored = await AsyncStorage.getItem(STORAGE_KEY);
+          const list = stored ? JSON.parse(stored) : [];
+          setAppointments(list);
+        } catch (err) {
+          console.log("Erro ao carregar agendamentos:", err);
+        }
+      };
+      loadAppointments();
+    }, [])
+  );
+
+  // 🗑️ Cancelar agendamento (somente aqui!)
+  const cancelAppointment = (id) => {
+    Alert.alert("Cancelar", "Deseja cancelar este agendamento?", [
+      { text: "Não", style: "cancel" },
+      {
+        text: "Sim",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const updated = appointments.filter((x) => x.id !== id);
+            setAppointments(updated);
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+          } catch (err) {
+            console.log("Erro ao cancelar:", err);
+          }
+        },
+      },
+    ]);
+  };
+
+  const renderItem = ({ item }) => {
+    const date = item.datetime
+      ? new Date(item.datetime).toLocaleDateString("pt-BR")
+      : "";
+    const time = item.datetime
+      ? new Date(item.datetime).toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "";
+
+    return (
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: isDark ? "#222" : "#fff", borderColor: isDark ? "#333" : "#ddd" },
+        ]}
+      >
+        <Text style={[styles.pet, { color: isDark ? "#fff" : "#000" }]}>
+          🐾 {item.petName}
+        </Text>
+        <Text style={[styles.text, { color: isDark ? "#ccc" : "#333" }]}>
+          Serviço: {item.service}
+        </Text>
+        <Text style={[styles.text, { color: isDark ? "#ccc" : "#333" }]}>
+          Transporte: {item.transport}
+        </Text>
+        {item.address ? (
+          <Text style={[styles.text, { color: isDark ? "#ccc" : "#333" }]}>
+            Endereço: {item.address}
+          </Text>
+        ) : null}
+        <Text style={[styles.text, { color: isDark ? "#ccc" : "#333" }]}>
+          Data: {date} às {time}
+        </Text>
+
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={() => cancelAppointment(item.id)}
+        >
+          <Text style={styles.cancelText}>Cancelar Agendamento</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Meus Agendamentos</Text>
+    <View
+      style={[styles.container, { backgroundColor: isDark ? "#111" : "#fff" }]}
+    >
+      <Text style={[styles.title, { color: "#54BFC5" }]}>
+        Meus Agendamentos
+      </Text>
 
       {appointments.length === 0 ? (
-        <Text style={styles.empty}>Nenhum agendamento ainda 🐾</Text>
+        <Text style={[styles.empty, { color: isDark ? "#bbb" : "#666" }]}>
+          Nenhum agendamento ainda 🐶
+        </Text>
       ) : (
         <FlatList
           data={appointments}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Text style={styles.petName}>🐶 {item.petName}</Text>
-              <Text style={styles.info}>Serviço: {item.service}</Text>
-              {item.address ? <Text style={styles.info}>📍 {item.address}</Text> : null}
-
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => removeAppointment(item.id)}
-              >
-                <Text style={styles.cancelText}>Cancelar</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingBottom: 60 }}
         />
       )}
     </View>
@@ -35,49 +125,24 @@ export default function AppointmentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#f5f6fa" },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#54BFC5",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  empty: {
-    textAlign: "center",
-    fontSize: 16,
-    color: "#718093",
-  },
+  container: { flex: 1, padding: 20 },
+  title: { fontSize: 22, fontWeight: "bold", marginBottom: 16, textAlign: "center" },
+  empty: { textAlign: "center", fontSize: 16 },
   card: {
-    backgroundColor: "#fff",
-    padding: 15,
+    borderWidth: 1,
     borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    padding: 16,
+    marginBottom: 14,
+    elevation: 2,
   },
-  petName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 5,
-    color: "#2f3640",
-  },
-  info: {
-    fontSize: 15,
-    color: "#353b48",
-    marginBottom: 4,
-  },
+  pet: { fontSize: 18, fontWeight: "bold", marginBottom: 6 },
+  text: { fontSize: 15, marginBottom: 4 },
   cancelButton: {
-    marginTop: 10,
     backgroundColor: "#e84118",
     padding: 10,
     borderRadius: 8,
+    marginTop: 10,
     alignItems: "center",
   },
-  cancelText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  cancelText: { color: "#fff", fontWeight: "bold" },
 });
