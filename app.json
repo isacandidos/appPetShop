@@ -1,19 +1,24 @@
 {
   "expo": {
     "name": "Dog VIP",
-    "slug": "dogvip",
+    "slug": "apppetshop",
     "version": "1.0.0",
     "orientation": "portrait",
-
     "icon": "./assets/imagens/dogvip-icon-1024.png",
-
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#54BFC5"
     },
-
     "userInterfaceStyle": "automatic",
-    "assetBundlePatterns": ["**/*"]
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "919e01eb-cf47-4034-916c-d11eb0c04e59"
+      }
+    },
+    "owner": "candiidoiisa"
   }
 }

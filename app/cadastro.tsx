@@ -1,73 +1,71 @@
+// app/cadastro.tsx
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, useColorScheme } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, useColorScheme, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 
-export default function CadastroScreen() {
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
-  const [telefone, setTelefone] = useState("");
-
+export default function Cadastro() {
   const router = useRouter();
   const theme = useColorScheme();
   const isDark = theme === "dark";
 
-  const handleSave = async () => {
-    if (!nome || !email || !telefone) {
-      return Alert.alert("Atenção", "Preencha todos os campos antes de continuar.");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleRegister = async () => {
+    if (!name || !phone || !password) {
+      Alert.alert("Erro", "Preencha todos os campos.");
+      return;
     }
 
-    const userData = { nome, email, telefone };
+    const userData = { name, phone, password };
     await AsyncStorage.setItem("userData", JSON.stringify(userData));
 
-    router.replace("(tabs)");
+    router.replace("/(tabs)");
   };
 
   return (
     <View style={[styles.container, { backgroundColor: isDark ? "#111" : "#fff" }]}>
-      <Text style={[styles.title, { color: "#54BFC5" }]}>Cadastro 🐾</Text>
-      <Text style={[styles.subtitle, { color: isDark ? "#ddd" : "#333" }]}>
-        Complete seu cadastro para continuar:
-      </Text>
+      <Text style={[styles.title, { color: "#54BFC5" }]}>Cadastro do Cliente</Text>
 
       <TextInput
-        style={[styles.input, { backgroundColor: isDark ? "#222" : "#fff", color: isDark ? "#fff" : "#000" }]}
-        placeholder="Seu nome"
+        placeholder="Nome completo"
         placeholderTextColor={isDark ? "#888" : "#666"}
-        value={nome}
-        onChangeText={setNome}
+        value={name}
+        onChangeText={setName}
+        style={[styles.input, { backgroundColor: isDark ? "#222" : "#f2f2f2", color: isDark ? "#fff" : "#000" }]}
       />
 
       <TextInput
-        style={[styles.input, { backgroundColor: isDark ? "#222" : "#fff", color: isDark ? "#fff" : "#000" }]}
-        placeholder="Seu e-mail"
-        placeholderTextColor={isDark ? "#888" : "#666"}
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-      />
-
-      <TextInput
-        style={[styles.input, { backgroundColor: isDark ? "#222" : "#fff", color: isDark ? "#fff" : "#000" }]}
         placeholder="Telefone"
         placeholderTextColor={isDark ? "#888" : "#666"}
-        value={telefone}
-        onChangeText={setTelefone}
         keyboardType="phone-pad"
+        value={phone}
+        onChangeText={setPhone}
+        style={[styles.input, { backgroundColor: isDark ? "#222" : "#f2f2f2", color: isDark ? "#fff" : "#000" }]}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleSave}>
-        <Text style={styles.buttonText}>Salvar e Continuar</Text>
+      <TextInput
+        placeholder="Senha"
+        secureTextEntry
+        placeholderTextColor={isDark ? "#888" : "#666"}
+        value={password}
+        onChangeText={setPassword}
+        style={[styles.input, { backgroundColor: isDark ? "#222" : "#f2f2f2", color: isDark ? "#fff" : "#000" }]}
+      />
+
+      <TouchableOpacity style={styles.button} onPress={handleRegister}>
+        <Text style={styles.buttonText}>Cadastrar e Entrar</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 30, alignItems: "center" },
-  title: { fontSize: 28, fontWeight: "bold", marginBottom: 12 },
-  subtitle: { fontSize: 16, marginBottom: 24, textAlign: "center" },
-  input: { width: "100%", borderWidth: 1, borderColor: "#ccc", padding: 14, borderRadius: 10, marginBottom: 12 },
-  button: { backgroundColor: "#54BFC5", paddingVertical: 14, paddingHorizontal: 24, borderRadius: 10 },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  container: { flex: 1, justifyContent: "center", padding: 24 },
+  title: { fontSize: 22, fontWeight: "bold", marginBottom: 24, textAlign: "center" },
+  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 10, padding: 12, marginBottom: 12 },
+  button: { backgroundColor: "#54BFC5", padding: 14, borderRadius: 10, alignItems: "center" },
+  buttonText: { color: "#fff", fontWeight: "bold" },
 });
