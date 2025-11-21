@@ -1,86 +1,67 @@
+// app/admin/agendamentos.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
-  Alert,
   StyleSheet,
+  Alert,
   useColorScheme,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
 
-/**
- * Tipo de agendamento — ajuste se no app / context houver mais campos
- */
+// 👉 Tipo dos agendamentos
 type Appointment = {
   id: string;
   petName: string;
   service: string;
   transport: string;
   address?: string;
-  // guardamos a data/hora em ISO string para persistir facilmente
-  datetime: string;
+  when: string; // ISO
+  clientPhone?: string;
 };
 
-const STORAGE_KEY = "@dogvip:appointments"; // chave usada no AsyncStorage
-
 export default function AdminAgendamentos() {
-  const router = useRouter();
-  const isDark = useColorScheme() === "dark";
+  const theme = useColorScheme();
+  const isDark = theme === "dark";
 
+  const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
 
-  // Carrega agendamentos do AsyncStorage
-  const loadAppointments = async () => {
+  // ================================
+  // 📌 Carregar todos os agendamentos do app
+  // ================================
+  const loadAllAppointments = async () => {
     try {
-      const raw = await AsyncStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        setAppointments([]);
-        setLoading(false);
-        return;
-      }
-      const parsed = JSON.parse(raw) as unknown;
-      // segurança: somente arrays válidos virarão appointments
-      if (Array.isArray(parsed)) {
-        // map e validação mínima
-        const list: Appointment[] = parsed
-          .map((x) => {
-            // tenta normalizar — aceitar objetos com os campos mínimos
-            if (!x || typeof x !== "object") return null;
-            const maybe = x as Partial<Appointment>;
-            if (!maybe.id || !maybe.petName || !maybe.service || !maybe.datetime)
-              return null;
-            return {
-              id: String(maybe.id),
-              petName: String(maybe.petName),
-              service: String(maybe.service),
-              transport: String(maybe.transport ?? "Nenhum"),
-              address: maybe.address ? String(maybe.address) : undefined,
-              datetime: String(maybe.datetime),
-            } as Appointment;
-          })
-          .filter(Boolean) as Appointment[];
+      setLoading(true);
 
-        setAppointments(list);
-      } else {
-        setAppointments([]);
+      const keys = await AsyncStorage.getAllKeys();
+      const appointmentKeys = keys.filter((k) =>
+        k.startsWith("@appointments_")
+      );
+
+      const all: Appointment[] = [];
+
+      for (const k of appointmentKeys) {
+        const saved = await AsyncStorage.getItem(k);
+        if (saved) {
+          const parsed: Appointment[] = JSON.parse(saved);
+          parsed.forEach((item) => all.push(item));
+        }
       }
+
+      setAppointments(all);
     } catch (err) {
-      console.log("Erro ao carregar agendamentos (admin):", err);
-      setAppointments([]);
+      console.log("Erro ao carregar agendamentos:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadAppointments();
-  }, []);
-
-  // Remove um agendamento (por id)
+  // ================================
+  // 📌 Remover agendamento
+  // ================================
   const removeAppointment = async (id: string) => {
     Alert.alert("Confirmar", "Deseja excluir este agendamento?", [
       { text: "Cancelar", style: "cancel" },
@@ -89,64 +70,83 @@ export default function AdminAgendamentos() {
         style: "destructive",
         onPress: async () => {
           try {
-            const updated = appointments.filter((a) => a.id !== id);
-            setAppointments(updated);
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-          } catch (err) {
-            console.log("Erro ao excluir agendamento:", err);
-            Alert.alert("Erro", "Não foi possível excluir. Tente novamente.");
+            const keys = await AsyncStorage.getAllKeys();
+            const appointmentKeys = keys.filter((k) =>
+              k.startsWith("@appointments_")
+            );
+
+            for (const k of appointmentKeys) {
+              const saved = await AsyncStorage.getItem(k);
+              if (!saved) continue;
+
+              const parsed: Appointment[] = JSON.parse(saved);
+              const filtered = parsed.filter((item) => item.id !== id);
+
+              await AsyncStorage.setItem(k, JSON.stringify(filtered));
+            }
+
+            setAppointments((prev) =>
+              prev.filter((item) => item.id !== id)
+            );
+          } catch (error) {
+            console.log("Erro ao excluir:", error);
           }
         },
       },
     ]);
   };
 
-  // Rendeiza data/hora a partir do ISO salvo
-  const formatDatetime = (iso?: string) => {
-    if (!iso) return "-";
-    try {
-      const d = new Date(iso);
-      const date = d.toLocaleDateString("pt-BR");
-      const time = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-      return `${date} • ${time}`;
-    } catch {
-      return iso;
-    }
-  };
+  useEffect(() => {
+    loadAllAppointments();
+  }, []);
 
   const renderItem = ({ item }: { item: Appointment }) => (
-    <View style={[styles.card, { backgroundColor: isDark ? "#1c1c1c" : "#fff", borderColor: isDark ? "#333" : "#eee" }]}>
-      <View style={styles.rowTop}>
-        <Text style={[styles.petName, { color: isDark ? "#fff" : "#222" }]}>{item.petName}</Text>
+    <TouchableOpacity
+      onLongPress={() => removeAppointment(item.id)}
+      style={[
+        styles.card,
+        { backgroundColor: isDark ? "#222" : "#f9f9f9", borderColor: "#ccc" },
+      ]}
+    >
+      <Text style={styles.label}>🐶 Pet: <Text style={styles.info}>{item.petName}</Text></Text>
+      <Text style={styles.label}>✂️ Serviço: <Text style={styles.info}>{item.service}</Text></Text>
+      <Text style={styles.label}>🚕 Transporte: <Text style={styles.info}>{item.transport}</Text></Text>
 
-        <TouchableOpacity onPress={() => removeAppointment(item.id)} style={styles.deleteBtn}>
-          <Text style={{ color: "#fff", fontWeight: "700" }}>Excluir</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={[styles.info, { color: isDark ? "#ddd" : "#444" }]}>Serviço: {item.service}</Text>
-      <Text style={[styles.info, { color: isDark ? "#ddd" : "#444" }]}>Transporte: {item.transport}</Text>
       {item.address ? (
-        <Text style={[styles.info, { color: isDark ? "#ddd" : "#444" }]}>Endereço: {item.address}</Text>
+        <Text style={styles.label}>📍 Endereço: <Text style={styles.info}>{item.address}</Text></Text>
       ) : null}
-      <Text style={[styles.info, { color: isDark ? "#ddd" : "#444" }]}>Quando: {formatDatetime(item.datetime)}</Text>
-    </View>
+
+      <Text style={styles.label}>📅 Data: <Text style={styles.info}>
+        {new Date(item.when).toLocaleDateString("pt-BR")}
+      </Text></Text>
+
+      <Text style={styles.label}>⏰ Hora: <Text style={styles.info}>
+        {new Date(item.when).toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </Text></Text>
+    </TouchableOpacity>
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? "#111" : "#f7f7f7" }]}>
-      <Text style={[styles.title, { color: "#54BFC5" }]}>📋 Lista de Agendamentos</Text>
+    <View style={[styles.container, { backgroundColor: isDark ? "#111" : "#fff" }]}>
+      <Text style={[styles.title, { color: "#54BFC5" }]}>Lista de Agendamentos</Text>
 
       {loading ? (
-        <Text style={{ color: isDark ? "#bbb" : "#666", textAlign: "center", marginTop: 18 }}>Carregando...</Text>
+        <Text style={{ color: isDark ? "#ccc" : "#555", marginTop: 20 }}>
+          Carregando...
+        </Text>
       ) : appointments.length === 0 ? (
-        <Text style={[styles.empty, { color: isDark ? "#bbb" : "#666" }]}>Nenhum agendamento.</Text>
+        <Text style={{ color: isDark ? "#ccc" : "#555", marginTop: 20 }}>
+          Nenhum agendamento encontrado.
+        </Text>
       ) : (
         <FlatList
           data={appointments}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 24 }}
+          style={{ width: "100%" }}
         />
       )}
     </View>
@@ -154,21 +154,15 @@ export default function AdminAgendamentos() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  title: { fontSize: 20, fontWeight: "700", marginBottom: 12, textAlign: "center" },
-  empty: { textAlign: "center", marginTop: 20 },
+  container: { flex: 1, padding: 20, alignItems: "center" },
+  title: { fontSize: 22, fontWeight: "bold", marginBottom: 16, marginTop: "30" },
   card: {
+    width: "100%",
+    padding: 14,
     borderRadius: 10,
-    padding: 12,
-    marginVertical: 8,
     borderWidth: 1,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    marginBottom: 12,
   },
-  petName: { fontSize: 18, fontWeight: "700", marginBottom: 6 },
-  info: { fontSize: 14, marginBottom: 6 },
-  rowTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  deleteBtn: { backgroundColor: "#e84118", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8 },
+  label: { fontSize: 15, fontWeight: "bold", color: "#333" },
+  info: { fontWeight: "normal", color: "#555" },
 });

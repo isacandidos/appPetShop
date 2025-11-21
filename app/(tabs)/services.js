@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#fff" },
   containerDark: { backgroundColor: "#121212" },
 
-  title: { fontSize: 26, fontWeight: "700", textAlign: "center", marginTop: 10, color: "#54BFC5" },
+  title: { fontSize: 26, fontWeight: "700", textAlign: "center", marginTop: 30, color: "#54BFC5" },
   titleDark: { color: "#54BFC5" },
 
   subtitle: { fontSize: 15, textAlign: "center", marginBottom: 25, marginTop: 4, color: "#333" },

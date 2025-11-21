@@ -1,71 +1,186 @@
-// app/cadastro.tsx
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, useColorScheme, Alert } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  useColorScheme,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { router } from "expo-router";
 
-export default function Cadastro() {
-  const router = useRouter();
-  const theme = useColorScheme();
-  const isDark = theme === "dark";
-
+export default function CadastroScreen() {
+  const [isFirstTime, setIsFirstTime] = useState(true);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleRegister = async () => {
-    if (!name || !phone || !password) {
-      Alert.alert("Erro", "Preencha todos os campos.");
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
+  const colors = {
+    bg: isDark ? "#111" : "#fff",
+    text: isDark ? "#f2f2f2" : "#222",
+    inputBg: isDark ? "#222" : "#f5f5f5",
+    inputBorder: isDark ? "#444" : "#ccc",
+    placeholder: isDark ? "#888" : "#999",
+  };
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const saved = await AsyncStorage.getItem("userData");
+      if (saved) {
+        setIsFirstTime(false);
+      }
+    };
+    loadUser();
+  }, []);
+
+  const handleSubmit = async () => {
+    if (isFirstTime) {
+      if (!name || !phone || !password) {
+        return Alert.alert("Preencha todos os campos!");
+      }
+
+      const user = { name, phone, password };
+      await AsyncStorage.setItem("userData", JSON.stringify(user));
+
+      router.replace("(tabs)");
       return;
     }
 
-    const userData = { name, phone, password };
-    await AsyncStorage.setItem("userData", JSON.stringify(userData));
+    const saved = await AsyncStorage.getItem("userData");
+    if (!saved) return Alert.alert("Erro", "Nenhum cadastro encontrado.");
 
-    router.replace("/(tabs)");
+    const storedUser = JSON.parse(saved);
+
+    if (name === storedUser.name && password === storedUser.password) {
+      router.replace("(tabs)");
+    } else {
+      Alert.alert("Nome ou senha incorretos.");
+    }
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? "#111" : "#fff" }]}>
-      <Text style={[styles.title, { color: "#54BFC5" }]}>Cadastro do Cliente</Text>
+    <View
+      style={{
+        flex: 1,
+        padding: 24,
+        justifyContent: "center",
+        backgroundColor: colors.bg,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 28,
+          fontWeight: "bold",
+          marginBottom: 28,
+          textAlign: "center",
+          color: colors.text,
+        }}
+      >
+        {isFirstTime ? "Criar Cadastro" : "Entrar"}
+      </Text>
 
       <TextInput
-        placeholder="Nome completo"
-        placeholderTextColor={isDark ? "#888" : "#666"}
+        placeholder="Nome"
+        placeholderTextColor={colors.placeholder}
         value={name}
         onChangeText={setName}
-        style={[styles.input, { backgroundColor: isDark ? "#222" : "#f2f2f2", color: isDark ? "#fff" : "#000" }]}
+        style={{
+          backgroundColor: colors.inputBg,
+          borderWidth: 1,
+          borderColor: colors.inputBorder,
+          padding: 14,
+          borderRadius: 10,
+          color: colors.text,
+          marginBottom: 14,
+        }}
       />
 
-      <TextInput
-        placeholder="Telefone"
-        placeholderTextColor={isDark ? "#888" : "#666"}
-        keyboardType="phone-pad"
-        value={phone}
-        onChangeText={setPhone}
-        style={[styles.input, { backgroundColor: isDark ? "#222" : "#f2f2f2", color: isDark ? "#fff" : "#000" }]}
-      />
+      {isFirstTime && (
+        <TextInput
+          placeholder="Telefone"
+          placeholderTextColor={colors.placeholder}
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          style={{
+            backgroundColor: colors.inputBg,
+            borderWidth: 1,
+            borderColor: colors.inputBorder,
+            padding: 14,
+            borderRadius: 10,
+            color: colors.text,
+            marginBottom: 14,
+          }}
+        />
+      )}
 
       <TextInput
         placeholder="Senha"
-        secureTextEntry
-        placeholderTextColor={isDark ? "#888" : "#666"}
+        placeholderTextColor={colors.placeholder}
         value={password}
         onChangeText={setPassword}
-        style={[styles.input, { backgroundColor: isDark ? "#222" : "#f2f2f2", color: isDark ? "#fff" : "#000" }]}
+        secureTextEntry
+        style={{
+          backgroundColor: colors.inputBg,
+          borderWidth: 1,
+          borderColor: colors.inputBorder,
+          padding: 14,
+          borderRadius: 10,
+          color: colors.text,
+          marginBottom: 22,
+        }}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Cadastrar e Entrar</Text>
+      <TouchableOpacity
+        onPress={handleSubmit}
+        style={{
+          backgroundColor: "#54BFC5",
+          padding: 16,
+          borderRadius: 10,
+        }}
+      >
+        <Text
+          style={{
+            color: "#fff",
+            fontSize: 18,
+            fontWeight: "bold",
+            textAlign: "center",
+          }}
+        >
+          {isFirstTime ? "Cadastrar" : "Entrar"}
+        </Text>
       </TouchableOpacity>
+
+      {/* 🔥 Botão de recadastrar */}
+      {!isFirstTime && (
+        <TouchableOpacity
+          onPress={async () => {
+            await AsyncStorage.removeItem("userData");
+            setIsFirstTime(true);
+            setName("");
+            setPhone("");
+            setPassword("");
+            Alert.alert("Cadastro apagado", "Faça um novo cadastro.");
+          }}
+          style={{ marginTop: 16 }}
+        >
+          <Text
+            style={{
+              color: "#54BFC5",
+              fontSize: 16,
+              fontWeight: "500",
+              textAlign: "center",
+              textDecorationLine: "underline",
+            }}
+          >
+            Esqueci minha senha / Recadastrar
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24 },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 24, textAlign: "center" },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 10, padding: 12, marginBottom: 12 },
-  button: { backgroundColor: "#54BFC5", padding: 14, borderRadius: 10, alignItems: "center" },
-  buttonText: { color: "#fff", fontWeight: "bold" },
-});

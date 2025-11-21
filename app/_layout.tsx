@@ -1,27 +1,30 @@
 import { Stack } from "expo-router";
 import { AppointmentsProvider } from "../context/AppointmentsContext";
 import { useColorScheme } from "react-native";
+import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { useEffect, useState } from "react";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [hasUser, setHasUser] = useState(false);
 
+  // Verifica se existe cadastro salvo no AsyncStorage
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const user = await AsyncStorage.getItem("userData");
-        setIsRegistered(!!user);
-      } catch (err) {
-        console.log("Erro ao verificar cadastro:", err);
-        setIsRegistered(false);
+        const saved = await AsyncStorage.getItem("userData"); // userData = {name, phone, password}
+        setHasUser(!!saved);
+      } catch (error) {
+        console.error("Erro ao carregar usuário:", error);
       }
+      setLoading(false);
     };
+
     checkUser();
   }, []);
 
-  if (isRegistered === null) return null; // carrega em branco por milissegundos
+  if (loading) return null; // Evita piscar tela ao iniciar
 
   return (
     <AppointmentsProvider>
@@ -33,16 +36,17 @@ export default function RootLayout() {
           },
         }}
       >
-        {isRegistered ? (
-          // Usuário já cadastrado → entra direto nas abas principais
-          <Stack.Screen name="(tabs)" />
-        ) : (
-          // Novo usuário → abre tela de cadastro
-          <Stack.Screen name="cadastro" />
-        )}
+        {/* Sempre registra a tela de cadastro */}
+        <Stack.Screen name="cadastro" />
 
-        {/** Tela modal (se quiser usar depois) */}
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+        {/* Se já existe cadastro → libera as demais rotas */}
+        {hasUser && (
+          <>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="admin" />
+            <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+          </>
+        )}
       </Stack>
     </AppointmentsProvider>
   );
